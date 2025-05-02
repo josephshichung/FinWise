@@ -11,33 +11,54 @@ class ExpenseTrackerApp:
         self.root.title("FinWise - Expense & Income Tracker")
         self.db = db
 
-        # Labels
-        tk.Label(root, text="Amount:").grid(row=0, column=0)
-        tk.Label(root, text="Category:").grid(row=1, column=0)
-        tk.Label(root, text="Type:").grid(row=2, column=0)
+        self.build_layout()
 
-        # Entry Fields
-        self.amount_entry = tk.Entry(root)
-        self.amount_entry.grid(row=0, column=1)
+    def build_layout(self):
+        row = 0
 
-        self.category_entry = tk.Entry(root)
-        self.category_entry.grid(row=1, column=1)
+        # Input fields
+        tk.Label(self.root, text="Amount:").grid(row=row, column=0, sticky="w")
+        self.amount_entry = tk.Entry(self.root)
+        self.amount_entry.grid(row=row, column=1)
+        row += 1
 
-        # Dropdown for Type Selection
+        tk.Label(self.root, text="Category:").grid(row=row, column=0, sticky="w")
+        self.category_entry = tk.Entry(self.root)
+        self.category_entry.grid(row=row, column=1)
+        row += 1
+
+        tk.Label(self.root, text="Type:").grid(row=row, column=0, sticky="w")
         self.type_var = tk.StringVar()
         self.type_var.set("Expense")
-        self.type_menu = tk.OptionMenu(root, self.type_var, "Expense", "Income")
-        self.type_menu.grid(row=2, column=1)
+        self.type_menu = tk.OptionMenu(self.root, self.type_var, "Expense", "Income")
+        self.type_menu.grid(row=row, column=1)
+        row += 1
 
-        # Buttons
-        tk.Button(root, text="Add Transaction", command=self.add_transaction).grid(row=3, columnspan=2)
-        tk.Button(root, text="Show Transactions", command=self.show_transactions).grid(row=4, columnspan=2)
-        tk.Button(root, text="Show Balance", command=self.show_balance).grid(row=5, columnspan=2)
-        tk.Button(root, text="Visualize Pie Chart", command=self.show_pie_chart).grid(row=6, columnspan=2)
-        tk.Button(root, text="Clear All", command=self.clear_transactions).grid(row=7, columnspan=2)
+        # Action buttons
+        tk.Button(self.root, text="Add Transaction", command=self.add_transaction).grid(row=row, columnspan=2, pady=2)
+        row += 1
+        tk.Button(self.root, text="Show Transactions", command=self.show_transactions).grid(row=row, columnspan=2, pady=2)
+        row += 1
+        tk.Button(self.root, text="Show Balance", command=self.show_balance).grid(row=row, columnspan=2, pady=2)
+        row += 1
+        tk.Button(self.root, text="Visualize Pie Chart", command=self.show_pie_chart).grid(row=row, columnspan=2, pady=2)
+        row += 1
+        tk.Button(self.root, text="Clear All", command=self.clear_transactions).grid(row=row, columnspan=2, pady=2)
+        row += 1
+
+        # Budget goal section
+        tk.Label(self.root, text="Set Goal (Category + Limit):").grid(row=row, columnspan=2, pady=(10, 0))
+        row += 1
+        self.goal_category = tk.Entry(self.root)
+        self.goal_category.grid(row=row, column=0)
+        self.goal_limit = tk.Entry(self.root)
+        self.goal_limit.grid(row=row, column=1)
+        row += 1
+        tk.Button(self.root, text="Set Budget Goal", command=self.set_goal).grid(row=row, columnspan=2, pady=2)
+        row += 1
+        tk.Button(self.root, text="Check Budget Alerts", command=self.check_alerts).grid(row=row, columnspan=2, pady=2)
 
     def add_transaction(self):
-        """Handles adding a new transaction (expense/income)"""
         amount = self.amount_entry.get()
         category = self.category_entry.get()
         transaction_type = self.type_var.get()
@@ -52,16 +73,11 @@ class ExpenseTrackerApp:
             messagebox.showerror("Error", "Amount must be a number!")
             return
 
-        if transaction_type == "Expense":
-            transaction = Expense(amount, category)
-        else:
-            transaction = Income(amount, category)
-
+        transaction = Expense(amount, category) if transaction_type == "Expense" else Income(amount, category)
         self.db.insert_transaction(transaction)
         messagebox.showinfo("Success", f"{transaction_type} added successfully!")
 
     def show_transactions(self):
-        """Displays all transactions"""
         transactions = self.db.fetch_transactions()
         if not transactions:
             messagebox.showinfo("No Transactions", "No transactions found.")
@@ -70,18 +86,16 @@ class ExpenseTrackerApp:
         messagebox.showinfo("Transaction History", transaction_list)
 
     def show_balance(self):
-        """Calculate and display current balance"""
         transactions = self.db.fetch_transactions()
         total = sum(t[3] if t[1] == "Income" else -t[3] for t in transactions)
         messagebox.showinfo("Balance", f"Current Balance: ${total:.2f}")
 
     def show_pie_chart(self):
-        """Draws a pie chart of expenses and income categories"""
         transactions = self.db.fetch_transactions()
         category_totals = defaultdict(float)
 
         for t in transactions:
-            key = f"{t[1]}: {t[2]}"  # e.g. "Expense: Food"
+            key = f"{t[1]}: {t[2]}"
             category_totals[key] += t[3]
 
         if not category_totals:
@@ -98,9 +112,34 @@ class ExpenseTrackerApp:
         plt.show()
 
     def clear_transactions(self):
-        """Deletes all transactions from database (use with caution)"""
         confirm = messagebox.askyesno("Clear All", "Are you sure you want to delete all transactions?")
         if confirm:
             self.db.cursor.execute("DELETE FROM transactions")
             self.db.conn.commit()
             messagebox.showinfo("Success", "All transactions cleared.")
+
+    def set_goal(self):
+        category = self.goal_category.get()
+        limit = self.goal_limit.get()
+        if not category or not limit:
+            messagebox.showerror("Error", "Both fields are required!")
+            return
+        try:
+            limit = float(limit)
+            self.db.insert_goal(category, limit)
+            messagebox.showinfo("Success", f"Goal set for {category}: ${limit} per month")
+        except ValueError:
+            messagebox.showerror("Error", "Limit must be a number")
+
+    def check_alerts(self):
+        expenses = self.db.get_total_expenses_by_category()
+        goals = self.db.get_goals()
+        alerts = []
+        for category, limit in goals:
+            spent = expenses.get(category, 0)
+            if spent > limit:
+                alerts.append(f"Over budget in {category}: ${spent} spent > ${limit} goal")
+        if alerts:
+            messagebox.showwarning("Budget Alerts", "\n".join(alerts))
+        else:
+            messagebox.showinfo("Budget Alerts", "All spending is within limits!")
