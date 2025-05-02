@@ -5,41 +5,42 @@ import getpass
 
 class Database:
     def __init__(self, base_dir="data/users", user_db_name=None):
-        # Ensure base directory exists
-        os.makedirs(base_dir, exist_ok=True)
-
-        # Use OS username if no custom name is provided
-        username = user_db_name or getpass.getuser()
-        db_path = os.path.join(base_dir, f"{username}.db")
-
-        self.db_path = db_path
-
-        try:
-            self.conn = sqlite3.connect(self.db_path)
+        if base_dir == ":memory:":
+            self.conn = sqlite3.connect(":memory:")
             self.cursor = self.conn.cursor()
+        else:
+            # Ensure base directory exists
+            os.makedirs(base_dir, exist_ok=True)
 
-            # Create tables if they don't exist
-            self.cursor.execute("""
-                CREATE TABLE IF NOT EXISTS transactions (
-                    id INTEGER PRIMARY KEY,
-                    type TEXT,
-                    category TEXT,
-                    amount REAL
-                )
-            """)
+            # Use OS username if no custom name is provided
+            username = user_db_name or getpass.getuser()
+            db_path = os.path.join(base_dir, f"{username}.db")
+            self.db_path = db_path
 
-            self.cursor.execute("""
-                CREATE TABLE IF NOT EXISTS goals (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    category TEXT,
-                    monthly_limit REAL
-                )
-            """)
+            try:
+                self.conn = sqlite3.connect(self.db_path)
+                self.cursor = self.conn.cursor()
+            except sqlite3.OperationalError as e:
+                print(f"Error while connecting to the database: {e}")
+                raise
 
-            self.conn.commit()
-        except sqlite3.OperationalError as e:
-            print(f"Error while connecting to the database: {e}")
-            raise
+        # Create tables if they don't exist
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY,
+                type TEXT,
+                category TEXT,
+                amount REAL
+            )
+        """)
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS goals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT,
+                monthly_limit REAL
+            )
+        """)
+        self.conn.commit()
 
     def insert_transaction(self, transaction):
         try:
