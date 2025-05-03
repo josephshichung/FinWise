@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, colorchooser
 from expenses import Expense
 from income import Income
 import matplotlib.pyplot as plt
@@ -16,46 +16,47 @@ class ExpenseTrackerApp:
         self.build_layout()
 
     def build_layout(self):
-        style = ttk.Style()
-        style.configure("TButton", padding=6, relief="flat", background="#9E9E9E", font=("Helvetica", 10))
-        style.configure("TLabel", font=("Helvetica", 10))
-        style.configure("Header.TLabel", font=("Helvetica", 14, "bold"))
+        self.style = ttk.Style()
+        self.style.configure("TButton", padding=6, relief="flat", background="#9E9E9E", font=("Helvetica", 10))
+        self.style.configure("TLabel", font=("Helvetica", 10))
+        self.style.configure("Header.TLabel", font=("Helvetica", 14, "bold"))
 
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.pack(fill="both", expand=True)
+        self.main_frame = ttk.Frame(self.root, padding="10")
+        self.main_frame.pack(fill="both", expand=True)
 
         # Section Title
-        ttk.Label(main_frame, text="Add Transaction", style="Header.TLabel").pack(pady=(0, 10))
+        ttk.Label(self.main_frame, text="Add Transaction", style="Header.TLabel").pack(pady=(0, 10))
 
         # Amount
-        ttk.Label(main_frame, text="Amount:").pack(anchor="w")
-        self.amount_entry = ttk.Entry(main_frame)
+        ttk.Label(self.main_frame, text="Amount:").pack(anchor="w")
+        self.amount_entry = ttk.Entry(self.main_frame)
         self.amount_entry.pack(fill="x", pady=2)
 
         # Category
-        ttk.Label(main_frame, text="Category:").pack(anchor="w")
-        self.category_entry = ttk.Entry(main_frame)
+        ttk.Label(self.main_frame, text="Category:").pack(anchor="w")
+        self.category_entry = ttk.Entry(self.main_frame)
         self.category_entry.pack(fill="x", pady=2)
 
         # Type
-        ttk.Label(main_frame, text="Type:").pack(anchor="w")
+        ttk.Label(self.main_frame, text="Type:").pack(anchor="w")
         self.type_var = tk.StringVar(value="Expense")
-        self.type_menu = ttk.OptionMenu(main_frame, self.type_var, "Expense", "Expense", "Income")
+        self.type_menu = ttk.OptionMenu(self.main_frame, self.type_var, "Expense", "Expense", "Income")
         self.type_menu.pack(fill="x", pady=2)
 
         # Buttons
-        ttk.Button(main_frame, text="Add Transaction", command=self.add_transaction).pack(fill="x", pady=4)
-        ttk.Button(main_frame, text="Show Transactions", command=self.show_transactions).pack(fill="x", pady=4)
-        ttk.Button(main_frame, text="Show Balance", command=self.show_balance).pack(fill="x", pady=4)
-        ttk.Button(main_frame, text="Visualize Pie Chart", command=self.show_pie_chart).pack(fill="x", pady=4)
-        ttk.Button(main_frame, text="Clear All", command=self.clear_transactions).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Add Transaction", command=self.add_transaction).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Show Transactions", command=self.show_transactions).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Show Balance", command=self.show_balance).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Visualize Pie Chart", command=self.show_pie_chart).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Clear All", command=self.clear_transactions).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Change Theme Color", command=self.change_theme_color).pack(fill="x", pady=4)
 
-        ttk.Separator(main_frame, orient='horizontal').pack(fill='x', pady=10)
+        ttk.Separator(self.main_frame, orient='horizontal').pack(fill='x', pady=10)
 
         # Budget Goal Section
-        ttk.Label(main_frame, text="Set Budget Goal", style="Header.TLabel").pack(pady=(0, 10))
+        ttk.Label(self.main_frame, text="Set Budget Goal", style="Header.TLabel").pack(pady=(0, 10))
 
-        goal_frame = ttk.Frame(main_frame)
+        goal_frame = ttk.Frame(self.main_frame)
         goal_frame.pack(fill="x", pady=5)
 
         ttk.Label(goal_frame, text="Category:").grid(row=0, column=0, sticky="w")
@@ -69,8 +70,8 @@ class ExpenseTrackerApp:
         goal_frame.columnconfigure(0, weight=1)
         goal_frame.columnconfigure(1, weight=1)
 
-        ttk.Button(main_frame, text="Set Budget Goal", command=self.set_goal).pack(fill="x", pady=4)
-        ttk.Button(main_frame, text="Check Budget Alerts", command=self.check_alerts).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Set Budget Goal", command=self.set_goal).pack(fill="x", pady=4)
+        ttk.Button(self.main_frame, text="Check Budget Alerts", command=self.check_alerts).pack(fill="x", pady=4)
 
     def add_transaction(self):
         amount = self.amount_entry.get()
@@ -119,9 +120,9 @@ class ExpenseTrackerApp:
         labels = list(category_totals.keys())
         sizes = list(category_totals.values())
 
-        plt.figure(figsize=(5,5))
-        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90,textprops={'size':8})
-        plt.title("Income and Expense Distribution", fontweight= 'bold', loc='center')
+        plt.figure(figsize=(5, 5))
+        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, textprops={'size': 8})
+        plt.title("Income and Expense Distribution", fontweight='bold', loc='center')
         plt.axis('equal')
         plt.tight_layout()
         plt.show()
@@ -158,3 +159,14 @@ class ExpenseTrackerApp:
             messagebox.showwarning("Budget Alerts", "\n".join(alerts))
         else:
             messagebox.showinfo("Budget Alerts", "All spending is within limits!")
+
+    def change_theme_color(self):
+        color_code = colorchooser.askcolor(title="Choose Theme Color")[1]
+        if color_code:
+            self.root.configure(bg=color_code)
+            self.main_frame.configure(style="Custom.TFrame")
+            self.style.configure("Custom.TFrame", background=color_code)
+            # Update background for any nested frames if necessary
+            for child in self.main_frame.winfo_children():
+                if isinstance(child, ttk.Frame):
+                    child.configure(style="Custom.TFrame")
